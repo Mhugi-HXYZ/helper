@@ -25,21 +25,23 @@
 
 package me.lucko.helper.mongo.plugin;
 
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
+import com.mongodb.*;
 import com.mongodb.client.MongoDatabase;
 
 import me.lucko.helper.internal.LoaderUtils;
 import me.lucko.helper.mongo.Mongo;
 import me.lucko.helper.mongo.MongoDatabaseCredentials;
 
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.mongodb.morphia.Datastore;
 import org.mongodb.morphia.Morphia;
 import org.mongodb.morphia.mapping.DefaultCreator;
 
 import javax.annotation.Nonnull;
+
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 
 public class HelperMongo implements Mongo {
 
@@ -55,10 +57,15 @@ public class HelperMongo implements Mongo {
                 credentials.getPassword().toCharArray()
         );
 
+        CodecRegistry pojoCodecRegistry = CodecRegistries.fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+                fromProviders(PojoCodecProvider.builder().automatic(true).build()));
+
         this.client = new MongoClient(
                 new ServerAddress(credentials.getAddress(), credentials.getPort()),
                 mongoCredential,
-                MongoClientOptions.builder().build()
+                MongoClientOptions.builder()
+                        .codecRegistry(pojoCodecRegistry)
+                        .build()
         );
         this.database = this.client.getDatabase(credentials.getDatabase());
         this.morphia = new Morphia();
